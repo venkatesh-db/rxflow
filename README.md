@@ -2,6 +2,8 @@
 
 Prescription-to-Lens Order and Lab Routing Platform — the reference system for the **FDE Intermediate-to-Advanced** course. All five course days run against this repo.
 
+**Instructors: start with [`docs/facilitator-runbook.md`](docs/facilitator-runbook.md)** — day-by-day timing, what to reveal when, and what NOT to show participants (`seed-manifest.md`, `calibration-notes.md`, and `golden-tasks/tasks/*.yaml`'s reference outcomes).
+
 ## Architecture
 
 - **`services/order-service`** — API. Order intake (`POST /orders`) and the **lock-critical, fail-closed** confirm path (`POST /orders/:id/confirm`).
