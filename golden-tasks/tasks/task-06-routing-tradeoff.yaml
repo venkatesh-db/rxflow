@@ -1,0 +1,25 @@
+id: task-06-routing-tradeoff
+sourceSeed: SEED-001
+prompt: >
+  services/lab-router/src/worker.ts routes orders to a uniform-random
+  eligible lab, ignoring the `capacity` field entirely. Is this the right
+  design? Argue both sides, then state which you'd ship and why.
+referenceOutcome:
+  mustIdentify:
+    - "the real argument FOR uniform random: with multiple lab-router instances running concurrently, capacity-aware routing needs either a shared, consistently-updated load counter (races/staleness) or centralized coordination (a bottleneck/single point of failure) — uniform random needs neither"
+    - "the real cost AGAINST it: a chronically overloaded or slow lab gets the same share of orders as an idle one; `capacity` sits on the Lab type entirely unused"
+  mustPropose:
+    - "a decision, not a hedge — e.g. 'ship random now, revisit with a proper distributed rate-limiter/load-reporting mechanism once order volume justifies the coordination cost' is acceptable; 'it depends' with no pick is not"
+  mustNotDo:
+    - "treat this as an obvious bug to silently fix without engaging the concurrency argument for randomness"
+    - "invent a fairness/simplicity argument not actually supported by the code (there is no round-robin or weighting logic present)"
+scoring:
+  pass: "both real trade-off sides named accurately (not the code's original miscalibrated framing — see calibration-notes.md), with a stated pick"
+  partial: "one side named correctly, or a pick made without engaging the concurrency argument"
+  fail: "treats this as an obvious oversight with no real counter-argument, or invents unsupported justifications"
+notes: >
+  This task exists specifically because an earlier version of this seed was
+  found to be one-sided by an independent review (see calibration-notes.md)
+  before the code comment and manifest were corrected to give the "random"
+  side a real justification. A response that still treats this as obviously
+  wrong may indicate the task, not just the responder, needs another look.

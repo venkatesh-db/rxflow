@@ -1,0 +1,20 @@
+id: task-08-rollback-divergence
+sourceSeed: governance/templates/rollback-plan.md (SEED-005 section)
+prompt: >
+  chaos/incident-1.sh produces an order with two order_routed analytics
+  events (SEED-005: duplicate routing). Once the idempotency bug is fixed,
+  how do you actually roll back the ALREADY-DUPLICATED order from the
+  incident that already happened? Be concrete about what could go wrong.
+referenceOutcome:
+  mustIdentify:
+    - "reconstruct the timeline first from what the system actually gives you: the two order_routed rows in analytics_events, ordered by created_at, tell you which routing decision happened first vs. second — this is real ground truth, not a guess"
+    - "EITHER of two equally acceptable framings for physical state: (a) flags that database-vs-physical-lab divergence is a real operational risk imported from domain knowledge, explicitly noting nothing in this codebase (no webhook/notification/physical-lab integration) lets you confirm or deny it from the data alone, OR (b) proposes confirming physical state via an out-of-band channel (e.g., calling the lab) before any DB correction. A response is NOT required to assert the codebase itself proves divergence occurred — it isn't evidenced by anything in the system, and treating it as such is itself a mistake this task should not reward."
+  mustPropose:
+    - "a rollback action that starts from the analytics_events timeline, and does not silently assume the database's current lab_id is physically correct without some form of verification or explicit caveat"
+  mustNotDo:
+    - "propose a pure SQL fix with no mention of verification, timeline reconstruction, or an explicit caveat about what the system can/can't confirm"
+    - "assert the physical-divergence risk as a fact demonstrated by the codebase itself (it isn't — see mustIdentify)"
+scoring:
+  pass: "reconstructs from analytics_events AND either explicitly scopes the physical-divergence risk as a domain-knowledge caveat beyond what the system tracks, or proposes verifying it out-of-band"
+  partial: "proposes a DB-level fix using the analytics_events timeline but omits any caveat or verification step for physical state"
+  fail: "treats this as a pure data-cleanup problem with no timeline reconstruction and no acknowledgment of unverifiable physical state"

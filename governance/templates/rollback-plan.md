@@ -4,7 +4,7 @@ Riskiest write in this repo: `services/ops-mcp-server` → `refund_order`, becau
 
 ## What "undo" actually means here
 
-A refund is not cleanly reversible once simulated/processed — you cannot "un-refund" a patient without a second transaction, which itself needs the same authorization checks as the original (otherwise the rollback path becomes a second exploitable surface). This repo does not implement a reversal tool. State this explicitly rather than assuming `refund_order` is safely undoable.
+A refund is not cleanly reversible once simulated/processed — and in this repo the reason is stronger than "no reversal tool exists": `refund_order` in `services/ops-mcp-server/src/tools.ts` doesn't persist any monetary state at all (no ledger/orders row is written; only `audit_log` records the attempt via `enforce()`). There is nothing in the database to "undo" — the entire reversal has to happen externally (a real payment system, a human-issued correction), which needs the same authorization checks as the original action. State this precisely: it's not that reversal is hard, it's that this system has no persisted state for reversal to act on.
 
 ## Rollback plan for a wrongly-authorized refund (exploiting SEED-002 before it's fixed)
 
@@ -15,4 +15,6 @@ A refund is not cleanly reversible once simulated/processed — you cannot "un-r
 
 ## For the order-routing path (SEED-005)
 
-Rollback here is more mechanical: a duplicate-routed order (two `order_routed` analytics events, as `chaos/incident-1.sh` demonstrates) can be corrected by re-running `routeOrder`'s lab assignment deterministically once the idempotency fix is in place, and manually deleting the duplicate `analytics_events` row — but only after confirming which of the two lab assignments the physical lab actually received, since the database and physical reality may already have diverged. State this divergence risk explicitly; it's the actual hard part of this rollback, not the SQL.
+Rollback here is more mechanical, and the repo actually gives you ground truth to start from: `routeOrder` in `services/lab-router/src/worker.ts` writes an `analytics_events` row on every call, so the two `order_routed` events' `created_at` ordering (as `chaos/incident-1.sh` produces) tells you exactly which routing decision happened first and second — reconstruct the timeline from that before touching anything.
+
+**What this repo does NOT let you verify, and shouldn't be assumed as fact from the code alone**: whether the physical lab has already diverged from the database (e.g., one lab began manufacturing before the duplicate was caught). Nothing in this codebase models a physical lab system, a notification, or a webhook — `routeOrder` only ever talks to this repo's own database. Treat "the database and physical reality may have diverged" as a **domain risk you're importing from real-world operations knowledge**, not something you can confirm or deny from `analytics_events` alone — and say so explicitly in your own rollback plan, rather than presenting it as evidenced by the system when it isn't.

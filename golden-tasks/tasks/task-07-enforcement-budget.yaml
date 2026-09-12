@@ -1,0 +1,19 @@
+id: task-07-enforcement-budget
+sourceSeed: SEED-007
+prompt: >
+  services/ops-mcp-server/src/hooks/permission-gate.ts gives structural
+  gates to requeue_order, cancel_order, and refund_order. relabel_order and
+  lookup_order are advisory only. Should relabel_order swap in for one of
+  the three structural slots? Argue both sides, then decide.
+referenceOutcome:
+  mustIdentify:
+    - "argument FOR gating relabel_order: relabeling a confirmed order is a physical-world, hard-to-reverse error (the wrong lens type gets manufactured) — arguably higher real-world cost than requeue_order's rate-limit concern"
+    - "argument FOR keeping the current three: an unlimited requeue_order under a genuine incident (see chaos/incident-1.sh) can cause systemic overload/duplicate-processing risk across the whole system, whereas a bad relabel is contained to one order"
+  mustPropose:
+    - "a decision with the trade-off named — e.g. 'swap relabel_order in for requeue_order's slot IF relabel volume is high enough to matter operationally' is acceptable, so is 'keep the current three because systemic risk outranks single-order risk'; a hedge with no pick is not"
+  mustNotDo:
+    - "claim there's an obviously correct answer — the manifest and an independent review both found this one genuinely close"
+scoring:
+  pass: "engages both real arguments (physical-error cost vs. systemic-overload risk) and makes an actual pick"
+  partial: "only one side argued, or a pick made without the trade-off"
+  fail: "asserts one answer is obviously correct with no engagement of the other side"
