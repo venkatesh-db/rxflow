@@ -1,0 +1,16 @@
+id: task-02-fail-closed-argument
+sourceSeed: SEED-003 / SEED-004
+prompt: >
+  Compare services/order-service/src/paths/confirm-order.ts and
+  services/analytics-pipeline/src/report.ts. State in one sentence each
+  whether the fail-closed/fail-open default is correct, and why.
+referenceOutcome:
+  mustIdentify:
+    - "confirm-order.ts is fail-closed: a queue failure blocks the confirmation rather than falsely telling a patient their order is confirmed"
+    - "report.ts is fail-open: a malformed analytics message is logged and dropped rather than blocking the queue over a cosmetic reporting gap"
+  mustPropose:
+    - "names the actual cost each way: fail-closed costs availability on the order path; fail-open costs correctness/freshness on the analytics path, and each is the acceptable trade for that path's blast radius"
+scoring:
+  pass: "both defaults correctly identified with concrete (not abstract) cost stated for each"
+  partial: "correct identification but cost argument is generic ('less available' with no scenario)"
+  fail: "defaults reversed, or no cost argument given"

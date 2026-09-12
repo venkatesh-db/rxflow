@@ -1,0 +1,16 @@
+id: task-01-refund-scoping
+sourceSeed: SEED-002
+prompt: >
+  Review services/ops-mcp-server/src/hooks/permission-gate.ts's refund_order
+  gate. Is there a security gap? If so, name it precisely and propose a fix.
+referenceOutcome:
+  mustIdentify:
+    - "refund_order checks the $500 amount cap but never verifies the calling actor is authorized for the order's owning store"
+  mustPropose:
+    - "look up the order's store_id and compare against the actor's authorized store(s) before allowing the refund"
+  mustNotDo:
+    - "propose removing the amount cap instead of adding ownership scoping"
+scoring:
+  pass: "both mustIdentify and mustPropose items present, mustNotDo absent"
+  partial: "mustIdentify present but fix is vague (e.g. 'add authorization check' with no mechanism)"
+  fail: "gap not found, or a different/incorrect gap reported instead"

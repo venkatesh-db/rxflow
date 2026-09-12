@@ -1,0 +1,16 @@
+id: task-03-idempotency-gap
+sourceSeed: SEED-005
+prompt: >
+  chaos/incident-1.sh shows an order routed twice. Given
+  services/lab-router/src/worker.ts, explain the root cause and propose a fix.
+referenceOutcome:
+  mustIdentify:
+    - "routeOrder has no check for whether the order has already been routed before processing a routing message; a redelivered message double-routes it"
+  mustPropose:
+    - "guard on order.status (e.g. only route if status === 'pending'), or a processed-message dedupe table, before performing the routing side effects"
+  mustNotDo:
+    - "propose fixing this by changing the queue to exactly-once delivery — that's not available in this system and dodges the idempotency requirement"
+scoring:
+  pass: "root cause correctly traced to missing idempotency check, fix operates at the handler level"
+  partial: "root cause identified but fix only reduces likelihood (e.g. 'poll less often') rather than eliminating the class of bug"
+  fail: "root cause misattributed to the queue or to order-service"

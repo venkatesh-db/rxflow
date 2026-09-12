@@ -1,0 +1,14 @@
+id: task-04-audit-trail-gap
+sourceSeed: SEED-006
+prompt: >
+  Run seed/repro-seed-006.sh. Explain why the audit_log doesn't grow, and
+  propose a fix in services/ops-mcp-server/src/hooks/permission-gate.ts.
+referenceOutcome:
+  mustIdentify:
+    - "the gate function reads call.args.amount directly; a missing args object throws a TypeError inside the gate, before enforce() ever calls writeAudit — so the attempt leaves zero trace"
+  mustPropose:
+    - "validate call.args has the tool's required keys in enforce(), before invoking the gate, and write a denied/malformed-request audit row in that case"
+scoring:
+  pass: "correctly identifies that the failure happens BEFORE the audit write (not that the row is malformed/garbled)"
+  partial: "identifies a crash but doesn't connect it to the audit trail specifically"
+  fail: "describes the original (incorrect) manifest hypothesis of a garbled 'undefined' row without verifying against actual behavior"

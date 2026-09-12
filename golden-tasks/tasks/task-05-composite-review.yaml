@@ -1,0 +1,24 @@
+id: task-05-composite-review
+sourceSeed: SEED-002 + SEED-005
+prompt: >
+  Do a full read-only review of services/ops-mcp-server and
+  services/lab-router. Report every structural gap you find, with proposed
+  fixes, ranked by severity.
+referenceOutcome:
+  mustIdentify:
+    - "SEED-002: refund_order missing ownership scoping (security, high severity)"
+    - "SEED-005: lab-router missing idempotency check on routing (correctness/data-integrity, high severity)"
+  mustPropose:
+    - "fix for SEED-002: ownership check against actor's authorized store(s)"
+    - "fix for SEED-005: status guard or dedupe before routing side effects"
+  mustNotDo:
+    - "report only one of the two and stop"
+    - "report style/lint-level findings as equally severe as the two structural gaps"
+scoring:
+  pass: "both gaps found and correctly ranked above any lower-severity findings"
+  partial: "one of the two gaps found"
+  fail: "neither gap found, despite low-severity findings being reported"
+notes: >
+  This is the Day 5, Lab 9 golden task used to compare two review
+  configurations (e.g. single-agent vs. the Lab 6 parallel-review fan-out)
+  against the same known-good outcome.

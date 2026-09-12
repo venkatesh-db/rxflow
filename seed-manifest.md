@@ -1,0 +1,33 @@
+---
+name: seed-manifest
+description: The 10 planted decisions/defects/scenarios in RxFlow, mapped to the day/lab that uses each, with location and correct finding.
+---
+
+# RxFlow seed manifest (Phase 1)
+
+Instructor-facing. Participants are never handed this file directly — it is the answer key.
+Each item is implemented as an ordinary-looking commit in the codebase, not flagged with TODO/FIXME.
+
+| ID | Category | Location | Intended finding | Correct fix / answer | Used by |
+|----|----------|----------|-------------------|------------------------|---------|
+| SEED-001 | Ambiguous architectural decision | `services/lab-router/src/worker.ts` — `routeOrder` | Lab selection is random among eligible labs; no capacity or SLA weighting. Defensible either way — the point is arguing the trade-off, not "fixing" it. | Accept as an open decision; a correct answer states the trade-off (fairness/simplicity vs. SLA optimization) and picks one with justification. | Day 1, Module 1 (enforcement-design note context) |
+| SEED-002 | Security / permission gap | `services/ops-mcp-server/src/hooks/permission-gate.ts` — `refund_order` gate | Refund gate checks the $500 amount cap but never verifies `call.actor` owns/services the order — any actor can refund any store's order. | Add an ownership check: look up the order's `store_id` and compare to the actor's authorized store(s) before allowing. | Day 2, Module 4 (red-team-your-own-design lab) |
+| SEED-003 | Fail-closed/fail-open boundary — correct | `services/order-service/src/paths/confirm-order.ts` | Confirm path is fail-closed: an enqueue failure rolls back the confirmation and marks the order `blocked`. This is the *correct* default for this path. | No fix needed — the lab is to *argue* why fail-closed is right here, with the availability cost named explicitly. | Day 1, Module 2, Lab 2 |
+| SEED-004 | Fail-closed/fail-open boundary — deliberately debatable | `services/analytics-pipeline/src/report.ts` | Analytics path is fail-open: malformed messages are logged and dropped, never block the queue. | No fix needed — the lab is to argue this is *right* for a read-only reporting path, and to state where the line would move if requirements changed (e.g., billing-relevant analytics). | Day 1, Module 2, Lab 2 |
+| SEED-005 | Defect — race condition / missing idempotency | `services/lab-router/src/worker.ts` — `routeOrder` | No check for "already routed" before processing a routing message; a redelivered message double-routes the same order to two labs. | Add an idempotency guard: check `order.status !== 'pending'` (or a processed-message dedupe table) before routing. | Day 4, Module 8 (multi-system incident) — exploited by `chaos/incident-1.sh` |
+| SEED-006 | Missing audit coverage | `services/ops-mcp-server/src/hooks/permission-gate.ts` — gate functions (e.g. `refund_order`) read `call.args.amount` directly with no validation that `call.args` exists first. | A tool call with `args` missing entirely throws a `TypeError` **inside the gate**, before `enforce()` reaches `writeAudit()` — the attempt is caught by `server.ts`'s outer try/catch and returned as an error to the caller, but **zero audit rows are written**. Verified via `seed/repro-seed-006.sh`: after the malformed call, `audit_log` count is unchanged (0 new rows). This is worse than "a garbled row" — it's a gap in the trail with no trace at all. | Validate `call.args` has the tool's required keys in `enforce()`, *before* invoking the gate, and write a `denied`/`malformed-request` audit row in that case — so even a bad-faith or buggy caller leaves a trace. | Day 2, Module 4 (audit-trail-quality lab) |
+| SEED-007 | Enforcement-budget question | `services/ops-mcp-server/src/hooks/permission-gate.ts` — `relabel_order` and `lookup_order` have no gate at all (advisory only, per `docs/mcp-tool-policy.md`) | Is leaving `relabel_order` advisory (no structural gate) the correct call given the "at most three" budget, or should it swap in for `requeue_order`'s rate limit? | Defensible either way — correct answer names the trade-off and defends the choice of which 3 tools got the budget. | Day 1, Module 1, Lab 1 |
+| SEED-008 | Incident scenario — cascading | Triggered by `chaos/incident-1.sh` | Worker crash mid-ack on `lab-router` (exploiting SEED-005) causes duplicate routing, which spikes `analytics_events` inserts, which makes `analytics-pipeline` polling fall behind, which makes dashboards look like an *order-service* outage when the root cause is the worker. | Correct incident timeline traces: worker crash → duplicate routing (SEED-005) → analytics backlog → misleading dashboard signal. Root cause is SEED-005, not order-service. | Day 4, Lab 8 |
+| SEED-009 | Incident scenario — variant (unannounced) | Triggered by `chaos/incident-2.sh` | Order intake is fail-closed end-to-end (order-service rolls back the order row if the routing enqueue fails), so a queue outage produces **zero** order rows, not a visible "blocked" status. Simultaneously, an unrelated retrying client trips `requeue_order`'s rate-limit gate 5x, producing a burst of `denied` audit rows that look alarming but are a working-as-designed control, not the incident. | Correct diagnosis: the real incident is "zero orders were created during the outage window" (found by checking `orders` count / order-service logs), not the rate-limit denials, which are noise from an unrelated client. | Day 4 assessment (unannounced variant) |
+| SEED-010 | Golden-task reference scenario | Composite of SEED-002 + SEED-005, using real `audit_log`/`queue_messages` data | A representative "find the refund-scoping gap AND the routing idempotency gap in one pass" task with a known-good reference outcome (both gaps named, both fixes proposed). | Reference outcome document lives in `golden-tasks/tasks/task-05-composite-review.yaml`. | Day 5, Module 9, Lab 9 |
+
+## Verification status
+
+Each seed must have a reproducible proof before Day 1 of any cohort:
+
+- SEED-002: `curl`/tool-call script showing actor A refunding actor B's store's order successfully.
+- SEED-005: `chaos/incident-1.sh` reliably produces a duplicated `lab_id` assignment for one `order_id`.
+- SEED-006: `seed/repro-seed-006.sh` — reproduced; confirmed zero new `audit_log` rows after a malformed call (verified via `seed/check-audit-count.ts`).
+- All others: verified by code inspection against this table (SEED-001, 003, 004, 007 are design points, not runtime bugs).
+
+Do not "fix" any SEED item before a cohort run without updating this manifest and re-verifying.

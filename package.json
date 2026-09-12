@@ -1,0 +1,25 @@
+{
+  "name": "rxflow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "RxFlow — Prescription-to-Lens Order and Lab Routing Platform. Reference system for the FDE Intermediate-to-Advanced course.",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "migrate": "tsx packages/shared-db/src/migrate.ts",
+    "seed": "tsx seed/apply-seeds.ts",
+    "dev:order-service": "npm run dev -w services/order-service",
+    "dev:lab-router": "npm run dev -w services/lab-router",
+    "dev:analytics": "npm run dev -w services/analytics-pipeline",
+    "reset": "rm -f rxflow.db && npm run migrate && npm run seed"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
+    "typescript": "^5.6.3"
+  }
+}

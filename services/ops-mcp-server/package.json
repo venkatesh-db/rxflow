@@ -1,0 +1,12 @@
+{
+  "name": "@rxflow/ops-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@rxflow/shared-db": "*"
+  }
+}

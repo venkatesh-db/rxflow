@@ -1,0 +1,70 @@
+name: PR Review Gate
+
+# Day 3, Module 7 / Lab 7: headless, structured, read-only AI review posted
+# as a PR comment. This job can NEVER block a merge or auto-merge on its
+# own — it is advisory, posting a comment only. Permissions below are
+# scoped to the minimum needed for that: read the repo, write PR comments.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      # PARTICIPANT LAB (Lab 7): replace this step with a real headless
+      # Claude invocation that reads the diff, runs the read-only specialist
+      # sub-agents under .claude/agents/, and writes structured JSON findings
+      # to review-output.json. Must exit 0 even when findings exist — this
+      # gate never fails the build, it only reports.
+      - name: Run AI review (participant fills this in)
+        id: review
+        run: |
+          echo '{"findings":[],"status":"placeholder — Lab 7 not yet implemented"}' > review-output.json
+          cat review-output.json
+
+      - name: Post findings as PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const raw = fs.readFileSync('review-output.json', 'utf-8');
+            const data = JSON.parse(raw);
+            const findings = data.findings ?? [];
+            const body = [
+              '### 🤖 AI Review (advisory only — does not block merge)',
+              '',
+              findings.length === 0
+                ? `_${data.status ?? 'No findings.'}_`
+                : findings.map(f => `- **${f.severity ?? 'note'}**: ${f.summary}`).join('\n'),
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
