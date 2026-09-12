@@ -47,3 +47,5 @@ echo '{"actor":"store-1","tool":"lookup_order","args":{"orderId":"..."}}' | npx 
 - **Phase 4**: chaos scripts (`chaos/incident-1.sh`, `chaos/incident-2.sh`, `chaos/reset.sh`) — both incidents verified to reproduce reliably.
 - **Phase 5**: 5 golden tasks (`golden-tasks/tasks/`), a working eval harness (`golden-tasks/run-eval.sh`), and governance templates filled in against real paths (`governance/templates/`).
 - **Phase 6**: technical dry run complete, 2 real bugs found and fixed, findings in `calibration-notes.md`. **Full timed human run-through with a partner is still owed** before the first real cohort — see calibration-notes.md's "Not yet done."
+
+<!-- CI verification test PR — confirms pr-review.yml triggers and comments -->
