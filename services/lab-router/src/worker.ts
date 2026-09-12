@@ -29,6 +29,17 @@ function routeOrder(orderId: string): void {
     return;
   }
 
+  // SEED-001 (see seed-manifest.md): uniform random among eligible labs,
+  // ignoring `capacity` entirely. This is a genuine, if debatable, choice —
+  // NOT an oversight: with multiple lab-router instances running
+  // concurrently (this worker is designed to be horizontally scaled), any
+  // capacity-aware scheme needs either a shared, consistently-updated load
+  // counter (a new source of races and staleness) or centralized
+  // coordination (a new bottleneck and single point of failure). Uniform
+  // random needs neither and is trivially safe under concurrent workers.
+  // The real cost: a chronically overloaded or slow lab gets exactly the
+  // same share of orders as an idle one — `capacity` sitting unused on the
+  // Lab type is the visible evidence of that cost, not a bug to silently fix.
   const chosen = eligible[Math.floor(Math.random() * eligible.length)];
   db.prepare("UPDATE orders SET lab_id = ?, status = 'routed' WHERE id = ?").run(chosen.id, orderId);
   db.prepare(`INSERT INTO analytics_events (event_type, order_id, payload) VALUES ('order_routed', ?, ?)`).run(
